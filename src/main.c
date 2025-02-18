@@ -1,4 +1,5 @@
-#define _XOPEN_SOURCE 700  // Поддержка POSIX-функций
+#define _XOPEN_SOURCE 700
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -15,7 +16,7 @@ int main(int argc, char *argv[]) {
             case 'f': show_files = 1; break;
             case 's': sort = 1; break;
             default:
-                fprintf(stderr, "Usage: %s [dir] [-l] [-d] [-f] [-s]\n", argv[0]);
+                fprintf(stderr, "Использование: %s [директория] [-l] [-d] [-f] [-s]\n", argv[0]);
                 exit(EXIT_FAILURE);
         }
     }
@@ -34,6 +35,7 @@ int main(int argc, char *argv[]) {
 
     return 0;
 }
+
 
 
 

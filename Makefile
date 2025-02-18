@@ -1,23 +1,29 @@
 CC = gcc
-CFLAGS = -std=c11 -pedantic -Wall -Wextra -Werror -g
+CFLAGS = -std=c11 -pedantic -Wall -Wextra -Werror -g -I./src/include
 LDFLAGS = -lm
 TARGET = dirwalk
-OBJS = main.o dirwalk.o
+SRCDIR = src
+OBJDIR = obj
+OBJS = $(OBJDIR)/main.o $(OBJDIR)/dirwalk.o
 
 all: $(TARGET)
 
 $(TARGET): $(OBJS)
-	$(CC) $(LDFLAGS) -o $(TARGET) $(OBJS)
+	$(CC) $(LDFLAGS) -o $@ $(OBJS)
 
-main.o: main.c dirwalk.h
-	$(CC) $(CFLAGS) -c main.c
+$(OBJDIR)/main.o: $(SRCDIR)/main.c $(SRCDIR)/include/dirwalk.h | $(OBJDIR)
+	$(CC) $(CFLAGS) -c $< -o $@
 
-dirwalk.o: dirwalk.c dirwalk.h
-	$(CC) $(CFLAGS) -c dirwalk.c
+$(OBJDIR)/dirwalk.o: $(SRCDIR)/dirwalk.c $(SRCDIR)/include/dirwalk.h | $(OBJDIR)
+	$(CC) $(CFLAGS) -c $< -o $@
+
+$(OBJDIR):
+	mkdir -p $(OBJDIR)
 
 clean:
-	rm -f *.o $(TARGET)
+	rm -rf $(OBJDIR) $(TARGET)
 
 .PHONY: all clean
+
 
 
