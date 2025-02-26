@@ -5,36 +5,39 @@
 #include <string.h>
 #include <dirent.h>
 #include <sys/stat.h>
-#include <unistd.h> 
+#include <unistd.h>
 #include <errno.h>
 #include <limits.h>
 #include "dirwalk.h"
 
-#define PATH_MAX 4096  
-
 #define RESET_COLOR "\033[0m"
 #define BLUE_COLOR "\033[34m"
-#define RED_COLOR "\033[31m" 
-#define DEFAULT_COLOR ""     
+#define RED_COLOR "\033[31m"
 
+/**
+ * @brief Копирует строку в динамически выделенную память.
+ * @param s Исходная строка.
+ * @return Указатель на копию строки.
+ */
 char *dup_string(const char *s) {
     char *copy = malloc(strlen(s) + 1);
     if (!copy) {
-        perror("malloc");
+        perror("malloc failed");
         exit(EXIT_FAILURE);
     }
     strcpy(copy, s);
     return copy;
 }
 
+/**
+ * @brief Определяет цвет для вывода имени файла в зависимости от его типа.
+ * @param mode Режим (тип) файла.
+ * @return Цвет в формате ANSI.
+ */
 const char* get_color_for_type(mode_t mode) {
-    if (S_ISDIR(mode)) {
-        return RED_COLOR; 
-    } else if (S_ISLNK(mode)) {
-        return BLUE_COLOR; 
-    } else {
-        return DEFAULT_COLOR;  
-    }
+    if (S_ISDIR(mode)) return RED_COLOR;
+    if (S_ISLNK(mode)) return BLUE_COLOR;
+    return RESET_COLOR;
 }
 
 int compare_entries(const void *a, const void *b) {
@@ -47,7 +50,7 @@ void collect_entries(const char *dir, int show_links, int show_dirs, int show_fi
     struct stat statbuf;
 
     if ((dp = opendir(dir)) == NULL) {
-        perror("opendir");
+        perror("opendir failed");
         return;
     }
 
@@ -55,12 +58,10 @@ void collect_entries(const char *dir, int show_links, int show_dirs, int show_fi
         char path[PATH_MAX];
         snprintf(path, sizeof(path), "%s/%s", dir, entry->d_name);
 
-        if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0) {
-            continue; 
-        }
+        if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0) continue;
 
         if (lstat(path, &statbuf) == -1) {
-            perror("lstat");
+            perror("lstat failed");
             continue;
         }
 
@@ -71,8 +72,10 @@ void collect_entries(const char *dir, int show_links, int show_dirs, int show_fi
         if ((show_links && is_link) || (show_dirs && is_dir) || (show_files && is_file)) {
             file_entry_t *new_entries = realloc(*entries, (*count + 1) * sizeof(file_entry_t));
             if (!new_entries) {
-                perror("realloc");
-                return;
+                perror("realloc failed");
+                free(*entries);
+                closedir(dp);
+                exit(EXIT_FAILURE);
             }
             *entries = new_entries;
             (*entries)[*count].name = dup_string(path);
@@ -80,12 +83,14 @@ void collect_entries(const char *dir, int show_links, int show_dirs, int show_fi
             (*count)++;
         }
 
-        if (is_dir && strcmp(entry->d_name, ".") != 0 && strcmp(entry->d_name, "..") != 0) {
+        if (is_dir) {
             collect_entries(path, show_links, show_dirs, show_files, sort, entries, count);
         }
     }
 
-    closedir(dp);
+    if (closedir(dp) == -1) {
+        perror("closedir failed");
+    }
 }
 
 void print_entries(file_entry_t *entries, size_t count, int sort) {
@@ -94,17 +99,13 @@ void print_entries(file_entry_t *entries, size_t count, int sort) {
     }
 
     for (size_t i = 0; i < count; i++) {
-        const char* color = get_color_for_type(entries[i].type);
-
-        printf("%s%s%s\n", color, entries[i].name, RESET_COLOR);
-
-        free(entries[i].name); 
+        printf("%s%s%s\n", get_color_for_type(entries[i].type), entries[i].name, RESET_COLOR);
+        free(entries[i].name);
     }
     free(entries);
 
     printf("Количество найденных файлов: %zu\n", count);
 }
-
 
 void scan_directory(const char *dir, int show_links, int show_dirs, int show_files, int sort) {
     file_entry_t *entries = NULL;
@@ -113,5 +114,4 @@ void scan_directory(const char *dir, int show_links, int show_dirs, int show_fil
     collect_entries(dir, show_links, show_dirs, show_files, sort, &entries, &count);
     print_entries(entries, count, sort);
 }
-
 

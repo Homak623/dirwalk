@@ -5,6 +5,12 @@
 #include <unistd.h>
 #include "dirwalk.h"
 
+/**
+ * @brief Основная функция программы.
+ * @param argc Количество аргументов командной строки.
+ * @param argv Массив аргументов командной строки.
+ * @return Код завершения программы.
+ */
 int main(int argc, char *argv[]) {
     int opt;
     int show_links = 0, show_dirs = 0, show_files = 0, sort = 0;
@@ -35,6 +41,7 @@ int main(int argc, char *argv[]) {
 
     return 0;
 }
+
 
 
 

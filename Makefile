@@ -1,29 +1,41 @@
 CC = gcc
-CFLAGS = -std=c11 -pedantic -Wall -Wextra -Werror -g -I./src/include
-LDFLAGS = -lm
-TARGET = dirwalk
 SRCDIR = src
-OBJDIR = obj
-OBJS = $(OBJDIR)/main.o $(OBJDIR)/dirwalk.o
+OBJDIR = build/obj
+BUILDDIR = build
+BINDIR = $(BUILDDIR)/$(MODE)
+TARGET = $(BINDIR)/dirwalk
+LDFLAGS = -lm
+SRCFILES = $(SRCDIR)/main.c $(SRCDIR)/dirwalk.c
+OBJFILES = $(patsubst $(SRCDIR)/%.c, $(OBJDIR)/%.o, $(SRCFILES))
+
+# Определяем режим сборки (по умолчанию debug)
+MODE ?= debug
+
+ifeq ($(MODE),debug)
+    CFLAGS = -std=c11 -pedantic -Wall -Wextra -Werror -g -DDEBUG -I$(SRCDIR)/include
+else ifeq ($(MODE),release)
+    CFLAGS = -std=c11 -pedantic -Wall -Wextra -Werror -O2 -DNDEBUG -I$(SRCDIR)/include
+else
+    $(error "Неизвестный режим! Используйте MODE=debug или MODE=release")
+endif
 
 all: $(TARGET)
 
-$(TARGET): $(OBJS)
-	$(CC) $(LDFLAGS) -o $@ $(OBJS)
+$(TARGET): $(OBJFILES) | $(BINDIR)
+	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $(OBJFILES)
 
-$(OBJDIR)/main.o: $(SRCDIR)/main.c $(SRCDIR)/include/dirwalk.h | $(OBJDIR)
+$(OBJDIR)/%.o: $(SRCDIR)/%.c | $(OBJDIR)
 	$(CC) $(CFLAGS) -c $< -o $@
 
-$(OBJDIR)/dirwalk.o: $(SRCDIR)/dirwalk.c $(SRCDIR)/include/dirwalk.h | $(OBJDIR)
-	$(CC) $(CFLAGS) -c $< -o $@
-
-$(OBJDIR):
-	mkdir -p $(OBJDIR)
+# Создание директорий, если их нет
+$(OBJDIR) $(BINDIR):
+	mkdir -p $@
 
 clean:
-	rm -rf $(OBJDIR) $(TARGET)
+	rm -rf $(BUILDDIR)
 
 .PHONY: all clean
+
 
 
 
